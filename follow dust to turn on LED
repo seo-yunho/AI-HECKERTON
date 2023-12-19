@@ -1,0 +1,41 @@
+import cyberpi as c
+import time
+
+#초기화
+c.console.clear()
+c.led.off("all")
+#클라우드 서비스 인증 코드
+c.cloud.setkey('af7f5c137c0942d493f7b01df24fc442')#내 키
+#와이파이 연결
+c.wifi.connect('browny70', 'cafebrowny70')
+while not c.wifi.is_connect():
+    pass
+#와이파이 연결 알리기 위해 LED켜기
+c.led.show('r o b y c')
+
+#날씨코드 서울 1835847 안산시 1846918 수원시 1835553
+c.console.println(c.cloud.weather('weather', '1835553')) 
+c.console.print("최고온도: ")
+c.console.println(c.cloud.weather('max_temp', '1835553')) 
+c.console.print("최저온도: ")
+c.console.println(c.cloud.weather('min_temp', '1835553')) 
+c.console.print("습도: ")
+c.console.println(c.cloud.weather('humidity', '1835553')) 
+#공기상태관련 코드 안산시 5515 서울 1689 수원시 5513
+c.console.println(c.cloud.air('aqi', '5513')) 
+c.console.print("pm2.5: ")
+c.console.println(c.cloud.air('pm2.5', '5513')) 
+c.console.print("pm10: ")
+c.console.println(c.cloud.air('pm10', '5513')) 
+c.console.print("co: ")
+c.console.println(c.cloud.air('co', '5513')) 
+
+# CO 농도 임계값 설정 (임의로 설정, 필요에 따라 조절)
+threshold = 6  # 임계값을 적절하게 설정하세요
+
+# CO 농도가 임계값 이상이면 LED를 빨간색으로 설정
+if c.cloud.air('co', '5513') > threshold:
+    c.led.show('r')
+else:
+    c.led.off('r')  # 임계값 이하이면 LED 끄기
+    
