@@ -1,0 +1,58 @@
+import random, event, time, cyberpi
+
+# 전진 방향을 추적하기 위한 전역 변수
+moving_forward = True
+
+def move_forward(duration=2):
+    cyberpi.pocket.servo_set(90, "S1")
+    cyberpi.pocket.motor_set(80, "M1")
+    time.sleep(duration)
+
+def turn(angle):
+    cyberpi.pocket.servo_set(angle, "S1")
+    cyberpi.pocket.motor_set(80, "M1")
+    time.sleep(2)
+
+def reverse(duration=2):
+    cyberpi.pocket.servo_set(90, "S1")
+    cyberpi.pocket.motor_set(-80, "M1")
+    time.sleep(duration)
+
+@event.start
+def on_start():
+    cyberpi.display.show_label('Obstacle Detect', 16, "center")
+    
+    global moving_forward
+    reverse_duration = 0
+    last_turn_angle = 90
+
+    while True:
+        if moving_forward:
+            move_forward()
+            if cyberpi.ranging_sensor.get(index=1) < 20:
+                # 장애물 감지 시 멈추고 1초
+                cyberpi.pocket.motor_set(0, "M1")
+                time.sleep(1)
+                reverse_duration = 2  # 후진하는 시간을 저장
+                reverse(reverse_duration)
+
+                # 좌회전 또는 우회전을 무작위로 선택
+                if random.randint(1, 2) == 1:
+                    last_turn_angle = 75
+                    turn(last_turn_angle)
+                else:
+                    last_turn_angle = 105
+                    turn(last_turn_angle)
+
+
+                # 반대 방향으로 회전
+                if last_turn_angle == 75:
+                    turn(105)
+                else:
+                    turn(75)
+
+        else:
+            # 전진 상태로 전환
+            moving_forward = True
+
+# 프로그램 시작
