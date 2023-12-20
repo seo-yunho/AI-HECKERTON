@@ -1,0 +1,67 @@
+import cyberpi as c
+import time
+
+# 와이파이 연결
+c.wifi.connect('browny70', 'cafebrowny70')
+
+# 와이파이가 연결되지 않을 동안 기다림
+while not c.wifi.is_connect():
+    pass
+
+# 음성인식 클라우드서비스 URL 및 인증 설정
+c.speech.set_recognition_address(url='http://msapi.mblock.cc/ms/bing_speech/interactive')
+c.cloud.setkey('af7f5c137c0942d493f7b01df24fc442')
+
+# LED 스트립에 빨간색과 파란색이 번갈아 점등
+def flash_led_red_blue():
+    count = 0
+    while count < 30:
+        for i in range(36):
+            if i % 2 == 0:
+                c.pocket.led_on(255, 0, 0, i, "S2")  # 빨간색
+            else:
+                c.pocket.led_on(0, 0, 255, i, "S2")  # 파란색
+        time.sleep(0.1)
+
+        for i in range(36):
+            if i % 2 == 0:
+                c.pocket.led_on(0, 0, 255, i, "S2")  # 파란색
+            else:
+                c.pocket.led_on(255, 0, 0, i, "S2")  # 빨간색
+        time.sleep(0.1)
+        count += 1
+    c.pocket.led_off('all', 'S2')
+
+# 낮과 밤 구분 및 음성인식 별도 처리
+def check_day_night_and_listen():
+    # 낮과 밤 구분
+    if c.get_bri() < 6:
+        for i in range(36):
+            c.pocket.led_on(255, 255, 255, i, 'S2')
+    else:
+        c.pocket.led_off('all', 'S2')
+
+    # 음성인식 시작
+    c.audio.play('start')
+    c.led.on(0, 0, 100)
+    c.cloud.listen('korean', 2)
+    c.led.off(id='all')
+    time.sleep(2)
+    result = c.cloud.listen_result()
+    c.console.print(result)
+    c.led.on(0, 100, 0)
+
+    return result
+
+# 메인 루프
+while True:
+    result = check_day_night_and_listen()
+
+    # 특정 키워드 인식 시 LED 및 경고음 실행
+    if '도와' in result or '살려' in result or '으악' in result or '끼야' in result:
+        c.audio.set_vol(50)
+        for i in range(30):
+            c.audio.set_tempo(400)
+            c.audio.play_until('level-up')
+        flash_led_red_blue()
+    time.sleep(0.1)
