@@ -1,0 +1,55 @@
+#업로드 모드일 때 음성인식 서비스
+import cyberpi as c
+import time
+
+#와이파이 연결 
+c.wifi.connect('U+Net7AE0', '8A662G$09A')
+
+#와이파이가 연결되지 않을 동안 기다림
+while not c.wifi.is_connect():
+    pass
+
+#음성인식 클라우드서비스 URL 
+#글로벌 
+c.speech.set_recognition_address(url = 'http://msapi.mblock.cc/ms/bing_speech/interactive')
+#엠블록 블록에디터에서 자신의 클라우드 서비스 인증코드를 가져와서 설정
+c.cloud.setkey('74ab7f4bc38848a9a97b554db6ac7fc0')
+
+#와이파이가 연결된 후 음성인식 시작와이파이가 연결된 후 음성인식 시작
+while True:
+    c.audio.play('start') #음성인식 시작
+    c.led.on(0, 0, 100)
+    #c.cloud.listen('english', 2)
+    c.cloud.listen('korean', 2)
+    c.led.off(id='all')
+    result = c.cloud.listen_result()
+    c.console.print(result)
+    c.audio.play('beeps') #음성인식 끝
+        
+    if result.find('도와') > -1:
+        c.led.on(255, 0, 0)
+        c.audio.set_vol(100)
+        for i in range(30):
+            c.audio.set_tempo(400)
+            c.audio.play_until('level-up')
+
+    if result.find('살려') > -1:
+        c.led.on(255, 0, 0)
+        c.audio.set_vol(100)
+        for i in range(30):
+            c.audio.set_tempo(400)
+            c.audio.play_until('level-up')
+            
+    if result.find('으아') > -1:
+        c.led.on(255, 0, 0)
+        c.audio.set_vol(100)
+        for i in range(30):
+            c.audio.set_tempo(400)
+            c.audio.play_until('level-up')
+            
+    if result.find('끼야') > -1:
+        c.led.on(255, 0, 0)
+        c.audio.set_vol(100)
+        for i in range(30):
+            c.audio.set_tempo(400)
+            c.audio.play_until('level-up')
