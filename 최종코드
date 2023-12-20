@@ -1,0 +1,137 @@
+import random, event, time, cyberpi
+
+# 와이파이 설정
+wifi_ssid = '서윤호의 iPhone'  # 와이파이 SSID
+wifi_password = 'jvskoxs7ap3xb'  # 와이파이 비밀번호
+
+# 클라우드 서비스 및 음성인식 설정
+cloud_key = 'af7f5c137c0942d493f7b01df24fc442'  # 클라우드 서비스 키
+speech_recognition_url = 'http://msapi.mblock.cc/ms/bing_speech/interactive'  # 음성인식 서비스 URL
+
+# 와이파이 연결
+cyberpi.wifi.connect(wifi_ssid, wifi_password)
+while not cyberpi.wifi.is_connect():
+    pass
+cyberpi.led.show('r o b y c')
+
+# 클라우드 서비스 및 음성인식 설정
+cyberpi.cloud.setkey(cloud_key)
+cyberpi.speech.set_recognition_address(url=speech_recognition_url)
+
+# 전진 방향을 추적하기 위한 전역 변수
+moving_forward = True
+
+# 날씨 및 공기질 정보 가져오기 및 표시
+def get_weather_and_air_quality():
+    # 날씨 정보
+    cyberpi.console.println(cyberpi.cloud.weather('weather', '1835553'))
+    cyberpi.console.print("최고온도: ")
+    cyberpi.console.println(cyberpi.cloud.weather('max_temp', '1835553'))
+    cyberpi.console.print("최저온도: ")
+    cyberpi.console.println(cyberpi.cloud.weather('min_temp', '1835553'))
+    cyberpi.console.print("습도: ")
+    cyberpi.console.println(cyberpi.cloud.weather('humidity', '1835553'))
+
+    # 공기질 정보
+    aqi = cyberpi.cloud.air('aqi', '5513')
+    pm25 = cyberpi.cloud.air('pm2.5', '5513')
+    pm10 = cyberpi.cloud.air('pm10', '5513')
+    co = cyberpi.cloud.air('co', '5513')
+
+    # AQI에 따른 LED 색상 변경
+    if aqi < 50:
+        cyberpi.led.on(0, 0, 100, id='all')
+    elif 50 <= aqi < 100:
+        cyberpi.led.on(0, 100, 0, id='all')
+    elif 100 <= aqi < 250:
+        cyberpi.led.on(100, 100, 0, id='all')
+    else:
+        cyberpi.led.on(100, 0, 0, id='all')
+
+    return aqi, pm25, pm10, co
+
+# 낮과 밤에 따른 LED 색상 변경
+def day_night_led():
+    brightness = cyberpi.get_bri()
+    if brightness < 6:
+        cyberpi.pocket.led_on(100, 100, 100, 'all', 'S2')
+    else:
+        cyberpi.pocket.led_off('all', 'S2')
+
+
+# 이동 및 회전 함수
+def move_forward(duration=2):
+    cyberpi.pocket.servo_set(90, "S1")
+    cyberpi.pocket.motor_set(30, "M1")
+    time.sleep(duration)
+
+def turn(angle):
+    cyberpi.pocket.servo_set(angle, "S1")
+    cyberpi.pocket.motor_set(30, "M1")
+    time.sleep(2)
+
+def reverse(duration=2):
+    cyberpi.pocket.servo_set(90, "S1")
+    cyberpi.pocket.motor_set(-30, "M1")
+    time.sleep(duration)
+
+# 응급 상황 시 경고음 및 LED 처리 함수
+def emergency_signal():
+    cyberpi.audio.play('start')  # 음성인식 시작
+    cyberpi.led.on(0, 0, 100)
+    cyberpi.cloud.listen('korean', 2)
+    cyberpi.led.off(id='all')
+    result = cyberpi.cloud.listen_result()
+    cyberpi.console.print(result)
+    
+    if '도와' in result or '살려' in result or '으아' in result or '끼야' in result:
+        cyberpi.led.on(100, 0, 0)
+        cyberpi.audio.set_vol(20)
+        for i in range(30):
+            cyberpi.audio.set_tempo(400)
+            cyberpi.audio.play_until('level-up')
+
+# 프로그램 시작
+@event.start
+def on_start():
+    
+    global moving_forward
+    reverse_duration = 0
+    last_turn_angle = 90
+
+    while True:
+        get_weather_and_air_quality()
+        day_night_led()
+        emergency_signal()  # 응급 상황 처리
+
+
+        if moving_forward:
+            move_forward()
+            if cyberpi.ranging_sensor.get(index=1) < 20:
+                # 장애물 감지 시 멈추고 1초
+                cyberpi.pocket.motor_set(0, "M1")
+                time.sleep(1)
+                reverse_duration = 2
+                reverse(reverse_duration)
+                 
+                # 지회전 또는 우회전을 무작위로 선택
+                if random.randint(1, 2) == 1:
+                    last_turn_angle = 75
+                    turn(last_turn_angle)
+                else:
+                    last_turn_angle = 105
+                    turn(last_turn_angle)
+                
+                # 반대 방향으로 회전
+                if last_turn_angle == 75:
+                    turn(105)
+                else:
+                    turn(75)
+
+            moving_forward = False
+        else:
+            # 전진 상태로 전환
+            moving_forward = True
+
+        time.sleep(2)
+
